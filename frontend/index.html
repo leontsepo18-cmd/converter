@@ -2,18 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>PDF Converter App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF Converter</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Convert Text or Word to PDF</h1>
+  <div class="container">
+    <h1>Text & Word to PDF Converter</h1>
 
-  <!-- Drag & Drop Zone -->
-  <div id="drop-zone">
-    <p>Drag & Drop your .docx or .txt file here</p>
-    <p>or</p>
-    <input type="file" id="fileInput" />
-    <button id="uploadBtn">Upload & Convert</button>
+    <!-- Drag and Drop Upload -->
+    <div id="drop-area" class="drop-area">
+      <p>Drag & Drop your file here<br>or click to browse</p>
+      <input type="file" id="fileInput" hidden>
+    </div>
+
+    <button id="uploadBtn">Convert to PDF</button>
+    <p id="status"></p>
   </div>
 
   <script src="app.js"></script>
