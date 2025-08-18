@@ -136,3 +136,116 @@ body {
   text-decoration: none;
   border-radius: 5px;
 }
+:root {
+  --bg-color: #ffffff;
+  --text-color: #222;
+  --card-color: #f9f9f9;
+  --accent-color: #2575fc;
+}
+
+body.dark {
+  --bg-color: #1e1e1e;
+  --text-color: #f1f1f1;
+  --card-color: #2b2b2b;
+  --accent-color: #6a11cb;
+}
+
+/* Base styling */
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: var(--bg-color);
+  color: var(--text-color);
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.container {
+  max-width: 600px;
+  margin: 50px auto;
+  background: var(--card-color);
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+h1 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Toggle button */
+.toggle-btn {
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+/* Drag & Drop */
+.drop-area {
+  border: 2px dashed var(--accent-color);
+  padding: 30px;
+  border-radius: 10px;
+  text-align: center;
+  margin: 15px 0;
+  transition: background 0.3s;
+}
+.drop-area.active {
+  background: rgba(37, 117, 252, 0.1);
+}
+
+/* Button */
+button, .btn {
+  background: var(--accent-color);
+  color: #fff;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+button:hover, .btn:hover {
+  opacity: 0.9;
+}
+
+/* Progress bar */
+.progress-container {
+  width: 100%;
+  height: 10px;
+  background: #ccc;
+  border-radius: 5px;
+  margin-top: 15px;
+  overflow: hidden;
+  display: none;
+}
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  background: var(--accent-color);
+  transition: width 0.3s;
+}
+
+/* Modal */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  padding-top: 50px;
+  left: 0; top: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.7);
+}
+.modal-content {
+  background: var(--card-color);
+  margin: auto;
+  padding: 20px;
+  border-radius: 10px;
+  width: 80%;
+  max-width: 800px;
+  text-align: center;
+}
+.close {
+  float: right;
+  font-size: 28px;
+  cursor: pointer;
+}
