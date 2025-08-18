@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PDF Converter</title>
+  <title>Text & Word to PDF Converter</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -17,9 +17,99 @@
     </div>
 
     <button id="uploadBtn">Convert to PDF</button>
+
+    <!-- Progress Bar -->
+    <div id="progressContainer" class="progress-container">
+      <div id="progressBar" class="progress-bar"></div>
+    </div>
+
     <p id="status"></p>
+    <div id="previewContainer"></div>
   </div>
 
-  <script src="app.js"></script>
+  <!-- JavaScript inline -->
+  <script>
+    const fileInput = document.getElementById("fileInput");
+    const dropArea = document.getElementById("drop-area");
+    const uploadBtn = document.getElementById("uploadBtn");
+    const status = document.getElementById("status");
+    const progressContainer = document.getElementById("progressContainer");
+    const progressBar = document.getElementById("progressBar");
+
+    let selectedFile = null;
+
+    // Drag & Drop
+    dropArea.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", (e) => {
+      selectedFile = e.target.files[0];
+      status.textContent = `Selected: ${selectedFile.name}`;
+    });
+
+    dropArea.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropArea.classList.add("active");
+    });
+    dropArea.addEventListener("dragleave", () => dropArea.classList.remove("active"));
+    dropArea.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropArea.classList.remove("active");
+      selectedFile = e.dataTransfer.files[0];
+      status.textContent = `Selected: ${selectedFile.name}`;
+    });
+
+    // Upload with Progress
+    uploadBtn.addEventListener("click", () => {
+      if (!selectedFile) {
+        status.textContent = "Please select or drop a file first.";
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "/upload");
+
+      // Reset
+      progressBar.style.width = "0%";
+      progressContainer.style.display = "block";
+      status.textContent = "Uploading...";
+
+      // Progress tracking
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const percent = (e.loaded / e.total) * 100;
+          progressBar.style.width = percent + "%";
+          status.textContent = `Uploading... ${Math.round(percent)}%`;
+        }
+      };
+
+      // On complete
+      xhr.onload = () => {
+        if (xhr.status === 200) {
+          const blob = new Blob([xhr.response], { type: "application/pdf" });
+          const url = window.URL.createObjectURL(blob);
+
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "converted.pdf";
+          a.click();
+
+          status.textContent = "Conversion complete! PDF downloaded.";
+        } else {
+          status.textContent = "Error converting file.";
+        }
+        progressContainer.style.display = "none";
+      };
+
+      xhr.onerror = () => {
+        status.textContent = "Upload failed.";
+        progressContainer.style.display = "none";
+      };
+
+      xhr.responseType = "blob";
+      xhr.send(formData);
+    });
+  </script>
 </body>
 </html>
