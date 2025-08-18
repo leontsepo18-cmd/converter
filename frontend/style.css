@@ -1,7 +1,76 @@
-body { font-family: Arial, sans-serif; background: #f4f6f9; margin: 0; }
-header { background: #007bff; color: white; text-align: center; padding: 15px; font-size: 20px; font-weight: bold; }
-.container { max-width: 700px; margin: 40px auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-textarea, input[type="file"] { width: 100%; margin: 10px 0; padding: 12px; border-radius: 6px; border: 1px solid #ccc; }
-button { background: #007bff; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-size: 16px; cursor: pointer; }
-button:hover { background: #0056b3; }
-.actions { text-align: center; }
+/* Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+  color: #333;
+}
+
+/* Centered Card */
+.container {
+  background: #fff;
+  padding: 30px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 450px;
+  text-align: center;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.container h1 {
+  margin-bottom: 20px;
+  color: #222;
+  font-size: 1.5rem;
+}
+
+/* Drag & Drop Box */
+.drop-area {
+  border: 2px dashed #6a11cb;
+  border-radius: 10px;
+  padding: 40px 20px;
+  margin-bottom: 20px;
+  cursor: pointer;
+  transition: background 0.3s, border-color 0.3s;
+}
+
+.drop-area p {
+  color: #666;
+  font-size: 1rem;
+}
+
+.drop-area.highlight {
+  background: rgba(106, 17, 203, 0.1);
+  border-color: #2575fc;
+}
+
+/* Button */
+#uploadBtn {
+  background: linear-gradient(90deg, #6a11cb, #2575fc);
+  color: #fff;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background 0.3s;
+}
+
+#uploadBtn:hover {
+  background: linear-gradient(90deg, #2575fc, #6a11cb);
+}
+
+/* Status text */
+#status {
+  margin-top: 15px;
+  font-size: 0.9rem;
+  color: #444;
+}
