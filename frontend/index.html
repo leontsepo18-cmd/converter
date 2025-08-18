@@ -8,7 +8,10 @@
 </head>
 <body>
   <div class="container">
-    <h1>Text & Word to PDF Converter</h1>
+    <h1>
+      Text & Word to PDF Converter
+      <button id="darkModeToggle" class="toggle-btn">🌙</button>
+    </h1>
 
     <!-- Drag and Drop Upload -->
     <div id="drop-area" class="drop-area">
@@ -84,12 +87,10 @@
       const xhr = new XMLHttpRequest();
       xhr.open("POST", "/upload");
 
-      // Reset progress
       progressBar.style.width = "0%";
       progressContainer.style.display = "block";
       status.textContent = "Uploading...";
 
-      // Progress tracking
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) {
           const percent = (e.loaded / e.total) * 100;
@@ -98,13 +99,11 @@
         }
       };
 
-      // On complete
       xhr.onload = () => {
         if (xhr.status === 200) {
           const blob = new Blob([xhr.response], { type: "application/pdf" });
           const url = window.URL.createObjectURL(blob);
 
-          // Show in modal
           pdfViewer.src = url;
           downloadBtn.href = url;
           previewModal.style.display = "block";
@@ -135,12 +134,24 @@
         previewModal.style.display = "none";
       }
     };
+
+    // Dark Mode Toggle
+    const darkModeToggle = document.getElementById("darkModeToggle");
+    if (localStorage.getItem("dark-mode") === "enabled") {
+      document.body.classList.add("dark");
+      darkModeToggle.textContent = "☀️";
+    }
+
+    darkModeToggle.addEventListener("click", () => {
+      document.body.classList.toggle("dark");
+      if (document.body.classList.contains("dark")) {
+        localStorage.setItem("dark-mode", "enabled");
+        darkModeToggle.textContent = "☀️";
+      } else {
+        localStorage.setItem("dark-mode", "disabled");
+        darkModeToggle.textContent = "🌙";
+      }
+    });
   </script>
-    </body>
+</body>
 </html>
-<body>
-  <div class="container">
-    <h1>
-      Text & Word to PDF Converter
-      <button id="darkModeToggle" class="toggle-btn">🌙</button>
-    </h1>
