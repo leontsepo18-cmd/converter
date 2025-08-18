@@ -1,4 +1,38 @@
-uploadBtn.addEventListener("click", () => {
+const dropArea = document.getElementById("drop-area");
+const fileInput = document.getElementById("fileInput");
+const uploadBtn = document.getElementById("uploadBtn");
+const status = document.getElementById("status");
+
+let selectedFile = null;
+
+// Open file dialog on click
+dropArea.addEventListener("click", () => fileInput.click());
+
+// Handle file selection
+fileInput.addEventListener("change", (e) => {
+  selectedFile = e.target.files[0];
+  dropArea.innerHTML = `<p>${selectedFile.name}</p>`;
+});
+
+// Drag and drop events
+dropArea.addEventListener("dragover", (e) => {
+  e.preventDefault();
+  dropArea.classList.add("highlight");
+});
+
+dropArea.addEventListener("dragleave", () => {
+  dropArea.classList.remove("highlight");
+});
+
+dropArea.addEventListener("drop", (e) => {
+  e.preventDefault();
+  dropArea.classList.remove("highlight");
+  selectedFile = e.dataTransfer.files[0];
+  dropArea.innerHTML = `<p>${selectedFile.name}</p>`;
+});
+
+// Upload file to backend
+uploadBtn.addEventListener("click", async () => {
   if (!selectedFile) {
     status.textContent = "Please select or drop a file first.";
     return;
@@ -7,52 +41,29 @@ uploadBtn.addEventListener("click", () => {
   const formData = new FormData();
   formData.append("file", selectedFile);
 
-  const xhr = new XMLHttpRequest();
-  xhr.open("POST", "/upload");
+  status.textContent = "Converting...";
 
-  const progressContainer = document.getElementById("progressContainer");
-  const progressBar = document.getElementById("progressBar");
+  try {
+    const response = await fetch("/upload", {
+      method: "POST",
+      body: formData
+    });
 
-  // Reset progress bar
-  progressBar.style.width = "0%";
-  progressContainer.style.display = "block";
-  status.textContent = "Uploading...";
+    if (!response.ok) throw new Error("Conversion failed");
 
-  // Track upload progress
-  xhr.upload.onprogress = (e) => {
-    if (e.lengthComputable) {
-      const percent = (e.loaded / e.total) * 100;
-      progressBar.style.width = `${percent}%`;
-      status.textContent = `Uploading... ${Math.round(percent)}%`;
-    }
-  };
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
 
-  // On complete
-  xhr.onload = () => {
-    if (xhr.status === 200) {
-      const blob = new Blob([xhr.response], { type: "application/pdf" });
-      const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "converted.pdf";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
 
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "converted.pdf";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-
-      status.textContent = "Conversion complete! PDF downloaded.";
-    } else {
-      status.textContent = "Error converting file.";
-    }
-
-    progressContainer.style.display = "none";
-  };
-
-  xhr.onerror = () => {
-    status.textContent = "Upload failed.";
-    progressContainer.style.display = "none";
-  };
-
-  xhr.responseType = "blob";
-  xhr.send(formData);
+    status.textContent = "Conversion complete! PDF downloaded.";
+  } catch (err) {
+    console.error(err);
+    status.textContent = "Error converting file.";
+  }
 });
