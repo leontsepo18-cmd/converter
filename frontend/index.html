@@ -24,10 +24,19 @@
     </div>
 
     <p id="status"></p>
-    <div id="previewContainer"></div>
   </div>
 
-  <!-- JavaScript inline -->
+  <!-- Modal for PDF Preview -->
+  <div id="previewModal" class="modal">
+    <div class="modal-content">
+      <span id="closeModal" class="close">&times;</span>
+      <iframe id="pdfViewer" width="100%" height="500px"></iframe>
+      <br>
+      <a id="downloadBtn" class="btn" download="converted.pdf">Download PDF</a>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
   <script>
     const fileInput = document.getElementById("fileInput");
     const dropArea = document.getElementById("drop-area");
@@ -35,6 +44,11 @@
     const status = document.getElementById("status");
     const progressContainer = document.getElementById("progressContainer");
     const progressBar = document.getElementById("progressBar");
+
+    const previewModal = document.getElementById("previewModal");
+    const closeModal = document.getElementById("closeModal");
+    const pdfViewer = document.getElementById("pdfViewer");
+    const downloadBtn = document.getElementById("downloadBtn");
 
     let selectedFile = null;
 
@@ -57,7 +71,7 @@
       status.textContent = `Selected: ${selectedFile.name}`;
     });
 
-    // Upload with Progress
+    // Upload + Preview
     uploadBtn.addEventListener("click", () => {
       if (!selectedFile) {
         status.textContent = "Please select or drop a file first.";
@@ -70,7 +84,7 @@
       const xhr = new XMLHttpRequest();
       xhr.open("POST", "/upload");
 
-      // Reset
+      // Reset progress
       progressBar.style.width = "0%";
       progressContainer.style.display = "block";
       status.textContent = "Uploading...";
@@ -90,12 +104,12 @@
           const blob = new Blob([xhr.response], { type: "application/pdf" });
           const url = window.URL.createObjectURL(blob);
 
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = "converted.pdf";
-          a.click();
+          // Show in modal
+          pdfViewer.src = url;
+          downloadBtn.href = url;
+          previewModal.style.display = "block";
 
-          status.textContent = "Conversion complete! PDF downloaded.";
+          status.textContent = "Preview ready!";
         } else {
           status.textContent = "Error converting file.";
         }
@@ -110,6 +124,17 @@
       xhr.responseType = "blob";
       xhr.send(formData);
     });
+
+    // Close modal
+    closeModal.addEventListener("click", () => {
+      previewModal.style.display = "none";
+    });
+
+    window.onclick = (event) => {
+      if (event.target === previewModal) {
+        previewModal.style.display = "none";
+      }
+    };
   </script>
 </body>
 </html>
