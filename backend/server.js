@@ -7,15 +7,13 @@ const path = require('path');
 
 const app = express();
 
-// Ensure uploads folder is available
+// Create uploads folder if it doesn't exist
 const uploadsDir = path.join(__dirname, '../uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir);
 }
 
-const upload = multer({
-  dest: uploadsDir
-});
+const upload = multer({ dest: uploadsDir });
 
 // Serve frontend files
 app.use(express.static(path.join(__dirname, '../frontend')));
