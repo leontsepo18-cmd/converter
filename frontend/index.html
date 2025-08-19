@@ -4,15 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PDF Converter</title>
-
-  <!-- jsPDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <!-- Mammoth.js (backup raw text extraction) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
-  <!-- docx-preview for better DOCX rendering -->
-  <script src="https://cdn.jsdelivr.net/npm/docx-preview@0.5.4/dist/docx-preview.min.js"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docx-preview@0.5.4/dist/docx-preview.css">
-
   <style>
     :root {
       --bg: #f5f7fa;
@@ -33,7 +26,6 @@
       font-family: "Segoe UI", Arial, sans-serif;
       background: var(--bg);
       color: var(--text);
-      transition: background 0.3s ease, color 0.3s ease;
     }
     .header {
       display: flex;
@@ -56,7 +48,6 @@
       background: var(--card);
       padding: 25px;
       border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
     .title {
       text-align: center;
@@ -82,8 +73,6 @@
       border-radius: 6px;
       font-size: 16px;
       cursor: pointer;
-      text-align: center;
-      text-decoration: none;
       margin-top: 10px;
     }
     #status {
@@ -106,16 +95,7 @@
       height: 100%;
       width: 0%;
       background: var(--accent);
-      transition: width 0.3s;
-    }
-    #docxPreview {
-      display: none;
-      border: 1px solid var(--border);
-      padding: 10px;
-      margin-top: 15px;
-      max-height: 300px;
-      overflow: auto;
-      background: var(--card);
+      transition: width 0.2s;
     }
   </style>
 </head>
@@ -138,8 +118,6 @@
       <div class="progress-bar" id="progressBar"></div>
     </div>
 
-    <div id="docxPreview"></div>
-
     <p id="status"></p>
     <a id="downloadLink" class="btn">Download PDF</a>
   </main>
@@ -153,10 +131,10 @@
     const downloadLink = document.getElementById("downloadLink");
     const progressContainer = document.getElementById("progressContainer");
     const progressBar = document.getElementById("progressBar");
-    const docxPreview = document.getElementById("docxPreview");
 
     let selectedFile = null;
 
+    // File select
     dropArea.addEventListener("click", () => fileInput.click());
     fileInput.addEventListener("change", e => {
       selectedFile = e.target.files[0];
@@ -169,74 +147,89 @@
       status.textContent = "Selected: " + selectedFile.name;
     });
 
+    // Convert
     uploadBtn.addEventListener("click", () => {
       if (!selectedFile) {
         status.textContent = "Please select a file first.";
         return;
       }
-
       progressContainer.style.display = "block";
       progressBar.style.width = "0%";
-      let progress = 0;
-
-      const fakeProgress = setInterval(() => {
-        progress += 20;
-        progressBar.style.width = progress + "%";
-        if (progress >= 100) clearInterval(fakeProgress);
-      }, 300);
-
-      const pdf = new jsPDF();
+      status.textContent = "Converting...";
 
       if (selectedFile.type === "text/plain" || selectedFile.name.endsWith(".txt")) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          const text = e.target.result;
-          const lines = pdf.splitTextToSize(text, 500);
-          pdf.text(lines, 40, 40);
-          createDownload(pdf, selectedFile.name.replace(/\.txt$/, ".pdf"));
-        };
-        reader.readAsText(selectedFile);
-
-      } else if (
-        selectedFile.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
-        selectedFile.name.endsWith(".docx")
-      ) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          docxPreview.style.display = "block";
-          docxPreview.innerHTML = "";
-
-          window.docx.renderAsync(e.target.result, docxPreview, null)
-            .then(() => {
-              const pdf = new jsPDF("p", "pt", "a4");
-              pdf.html(docxPreview, {
-                callback: function(pdfObj) {
-                  createDownload(pdfObj, selectedFile.name.replace(/\.docx$/, ".pdf"));
-                },
-                x: 20,
-                y: 20,
-                width: 560
-              });
-            })
-            .catch(() => {
-              status.textContent = "❌ Error reading DOCX file.";
-            });
-        };
-        reader.readAsArrayBuffer(selectedFile);
-
+        convertTxt(selectedFile);
+      } else if (selectedFile.name.endsWith(".docx")) {
+        convertDocx(selectedFile);
       } else {
         status.textContent = "❌ Only TXT and DOCX files are supported.";
       }
     });
 
-    function createDownload(pdf, filename) {
-      const pdfBlob = pdf.output("blob");
-      const url = URL.createObjectURL(pdfBlob);
+    function updateProgress(percent) {
+      progressBar.style.width = percent + "%";
+    }
+
+    function convertTxt(file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const text = e.target.result;
+        generatePdfFromText(text, file.name.replace(/\.txt$/, ".pdf"));
+      };
+      reader.readAsText(file);
+    }
+
+    function convertDocx(file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const arrayBuffer = e.target.result;
+        mammoth.extractRawText({arrayBuffer}).then(result => {
+          generatePdfFromText(result.value, file.name.replace(/\.docx$/, ".pdf"));
+        }).catch(() => {
+          status.textContent = "❌ Error reading DOCX file.";
+        });
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function generatePdfFromText(text, filename) {
+      const pdf = new jsPDF({ unit: "pt", format: "a4" });
+      const pageHeight = pdf.internal.pageSize.height;
+      const margin = 40;
+      const lineHeight = 14;
+      const maxLineWidth = pdf.internal.pageSize.width - margin * 2;
+
+      let y = margin;
+      let lines = pdf.splitTextToSize(text, maxLineWidth);
+
+      lines.forEach((line, index) => {
+        if (y + lineHeight > pageHeight - margin) {
+          pdf.addPage();
+          y = margin;
+        }
+        pdf.text(line, margin, y);
+        y += lineHeight;
+        if (index % 50 === 0) updateProgress(Math.floor(index / lines.length * 100));
+      });
+
+      const blob = pdf.output("blob");
+      const url = URL.createObjectURL(blob);
+
+      // Fallback download link
       downloadLink.href = url;
       downloadLink.download = filename;
       downloadLink.style.display = "block";
-      status.textContent = "✅ File converted to PDF!";
-      progressBar.style.width = "100%";
+
+      // Auto download
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      status.textContent = "✅ File converted and downloaded!";
+      updateProgress(100);
     }
 
     // Theme toggle
