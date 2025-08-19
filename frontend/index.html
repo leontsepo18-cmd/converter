@@ -7,9 +7,7 @@
 
   <!-- jsPDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <!-- Mammoth.js (backup raw text extraction) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
-  <!-- docx-preview for better DOCX rendering -->
+  <!-- docx-preview -->
   <script src="https://cdn.jsdelivr.net/npm/docx-preview@0.5.4/dist/docx-preview.min.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docx-preview@0.5.4/dist/docx-preview.css">
 
@@ -177,57 +175,78 @@
 
       progressContainer.style.display = "block";
       progressBar.style.width = "0%";
-      let progress = 0;
 
       const fakeProgress = setInterval(() => {
-        progress += 20;
-        progressBar.style.width = progress + "%";
-        if (progress >= 100) clearInterval(fakeProgress);
+        let w = parseInt(progressBar.style.width) || 0;
+        if (w < 90) {
+          progressBar.style.width = (w + 10) + "%";
+        } else {
+          clearInterval(fakeProgress);
+        }
       }, 300);
 
-      const pdf = new jsPDF();
-
       if (selectedFile.type === "text/plain" || selectedFile.name.endsWith(".txt")) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          const text = e.target.result;
-          const lines = pdf.splitTextToSize(text, 500);
-          pdf.text(lines, 40, 40);
-          createDownload(pdf, selectedFile.name.replace(/\.txt$/, ".pdf"));
-        };
-        reader.readAsText(selectedFile);
-
-      } else if (
-        selectedFile.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
-        selectedFile.name.endsWith(".docx")
-      ) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          docxPreview.style.display = "block";
-          docxPreview.innerHTML = "";
-
-          window.docx.renderAsync(e.target.result, docxPreview, null)
-            .then(() => {
-              const pdf = new jsPDF("p", "pt", "a4");
-              pdf.html(docxPreview, {
-                callback: function(pdfObj) {
-                  createDownload(pdfObj, selectedFile.name.replace(/\.docx$/, ".pdf"));
-                },
-                x: 20,
-                y: 20,
-                width: 560
-              });
-            })
-            .catch(() => {
-              status.textContent = "❌ Error reading DOCX file.";
-            });
-        };
-        reader.readAsArrayBuffer(selectedFile);
-
+        convertTxt(selectedFile);
+      } else if (selectedFile.name.endsWith(".docx")) {
+        convertDocx(selectedFile);
       } else {
         status.textContent = "❌ Only TXT and DOCX files are supported.";
       }
     });
+
+    function convertTxt(file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const pdf = new jsPDF();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const margin = 20;
+        const lineHeight = 12;
+        const maxLineWidth = pageWidth - margin * 2;
+
+        let y = margin;
+        let text = e.target.result;
+        let lines = pdf.splitTextToSize(text, maxLineWidth);
+
+        lines.forEach(line => {
+          if (y + lineHeight > pageHeight - margin) {
+            pdf.addPage();
+            y = margin;
+          }
+          pdf.text(line, margin, y);
+          y += lineHeight;
+        });
+
+        createDownload(pdf, file.name.replace(/\.txt$/, ".pdf"));
+      };
+      reader.readAsText(file);
+    }
+
+    function convertDocx(file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        docxPreview.style.display = "block";
+        docxPreview.innerHTML = "";
+
+        window.docx.renderAsync(e.target.result, docxPreview, null)
+          .then(() => {
+            const pdf = new jsPDF("p", "pt", "a4");
+            pdf.html(docxPreview, {
+              callback: function(pdfObj) {
+                createDownload(pdfObj, file.name.replace(/\.docx$/, ".pdf"));
+              },
+              x: 20,
+              y: 20,
+              width: 560,
+              windowWidth: docxPreview.scrollWidth
+            });
+          })
+          .catch(() => {
+            status.textContent = "❌ Error reading DOCX file.";
+          });
+      };
+      reader.readAsArrayBuffer(file);
+    }
 
     function createDownload(pdf, filename) {
       const pdfBlob = pdf.output("blob");
