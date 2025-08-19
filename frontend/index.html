@@ -11,7 +11,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
 
   <style>
-    /* Light Theme */
     :root {
       --bg: #f5f7fa;
       --text: #1e1e2f;
@@ -19,8 +18,6 @@
       --accent: #2575fc;
       --border: #dcdcdc;
     }
-
-    /* Dark Theme */
     body.dark {
       --bg: #121212;
       --text: #eaeaea;
@@ -28,7 +25,6 @@
       --accent: #6a11cb;
       --border: #333;
     }
-
     body {
       margin: 0;
       font-family: "Segoe UI", Arial, sans-serif;
@@ -36,30 +32,21 @@
       color: var(--text);
       transition: background 0.3s ease, color 0.3s ease;
     }
-
     .header {
       display: flex;
       justify-content: flex-end;
-      align-items: center;
       padding: 15px 20px;
       background: var(--card);
       border-bottom: 1px solid var(--border);
     }
-
     .theme-toggle {
       background: var(--accent);
       color: #fff;
       border: none;
       padding: 8px 14px;
       border-radius: 6px;
-      font-size: 14px;
       cursor: pointer;
-      transition: opacity 0.3s;
     }
-    .theme-toggle:hover {
-      opacity: 0.9;
-    }
-
     .container {
       max-width: 600px;
       margin: 40px auto;
@@ -68,15 +55,12 @@
       border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
-
     .title {
       text-align: center;
       margin-bottom: 20px;
       font-size: 28px;
       font-weight: 600;
-      color: var(--text);
     }
-
     .drop-area {
       border: 2px dashed var(--accent);
       padding: 40px;
@@ -84,15 +68,7 @@
       text-align: center;
       margin-bottom: 20px;
       cursor: pointer;
-      transition: background 0.3s, box-shadow 0.3s;
     }
-    .drop-area:hover {
-      background: rgba(37,117,252,0.05);
-    }
-    body.dark .drop-area:hover {
-      background: rgba(106,17,203,0.1);
-    }
-
     .btn {
       display: block;
       width: 100%;
@@ -103,22 +79,32 @@
       border-radius: 6px;
       font-size: 16px;
       cursor: pointer;
-      transition: opacity 0.3s;
       text-align: center;
       text-decoration: none;
+      margin-top: 10px;
     }
-    .btn:hover {
-      opacity: 0.9;
-    }
-
     #status {
-      margin-top: 15px;
+      margin-top: 10px;
       text-align: center;
     }
-
     #downloadLink {
-      margin-top: 15px;
       display: none;
+    }
+    /* Progress Bar */
+    .progress-container {
+      width: 100%;
+      background: var(--border);
+      border-radius: 8px;
+      margin-top: 15px;
+      overflow: hidden;
+      height: 14px;
+      display: none;
+    }
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      transition: width 0.3s;
     }
   </style>
 </head>
@@ -137,6 +123,10 @@
 
     <button id="uploadBtn" class="btn">Convert to PDF</button>
 
+    <div class="progress-container" id="progressContainer">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+
     <p id="status"></p>
     <a id="downloadLink" class="btn">Download PDF</a>
   </main>
@@ -148,10 +138,11 @@
     const uploadBtn = document.getElementById("uploadBtn");
     const status = document.getElementById("status");
     const downloadLink = document.getElementById("downloadLink");
+    const progressContainer = document.getElementById("progressContainer");
+    const progressBar = document.getElementById("progressBar");
 
     let selectedFile = null;
 
-    // Drag & drop
     dropArea.addEventListener("click", () => fileInput.click());
     fileInput.addEventListener("change", e => {
       selectedFile = e.target.files[0];
@@ -159,27 +150,32 @@
     });
     dropArea.addEventListener("dragover", e => {
       e.preventDefault();
-      dropArea.classList.add("active");
     });
-    dropArea.addEventListener("dragleave", () => dropArea.classList.remove("active"));
     dropArea.addEventListener("drop", e => {
       e.preventDefault();
-      dropArea.classList.remove("active");
       selectedFile = e.dataTransfer.files[0];
       status.textContent = "Selected: " + selectedFile.name;
     });
 
-    // Convert TXT or DOCX → PDF
     uploadBtn.addEventListener("click", () => {
       if (!selectedFile) {
         status.textContent = "Please select a file first.";
         return;
       }
 
+      progressContainer.style.display = "block";
+      progressBar.style.width = "0%";
+      let progress = 0;
+
+      const fakeProgress = setInterval(() => {
+        progress += 20;
+        progressBar.style.width = progress + "%";
+        if (progress >= 100) clearInterval(fakeProgress);
+      }, 300);
+
       const pdf = new jsPDF();
 
       if (selectedFile.type === "text/plain" || selectedFile.name.endsWith(".txt")) {
-        // TXT
         const reader = new FileReader();
         reader.onload = function(e) {
           const text = e.target.result;
@@ -193,7 +189,6 @@
         selectedFile.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
         selectedFile.name.endsWith(".docx")
       ) {
-        // DOCX
         const reader = new FileReader();
         reader.onload = function(e) {
           mammoth.extractRawText({ arrayBuffer: e.target.result })
@@ -214,7 +209,6 @@
       }
     });
 
-    // Create download link
     function createDownload(pdf, filename) {
       const pdfBlob = pdf.output("blob");
       const url = URL.createObjectURL(pdfBlob);
@@ -222,6 +216,7 @@
       downloadLink.download = filename;
       downloadLink.style.display = "block";
       status.textContent = "✅ File converted to PDF!";
+      progressBar.style.width = "100%";
     }
 
     // Theme toggle
