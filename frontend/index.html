@@ -3,134 +3,44 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PDF Converter</title>
+  <title>DOCX Converter</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
   <style>
-    :root {
-      --bg: #f5f7fa;
-      --text: #1e1e2f;
-      --card: #ffffff;
-      --accent: #2575fc;
-      --border: #dcdcdc;
-    }
-    body.dark {
-      --bg: #121212;
-      --text: #eaeaea;
-      --card: #1e1e1e;
-      --accent: #6a11cb;
-      --border: #333;
-    }
-    body {
-      margin: 0;
-      font-family: "Segoe UI", Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-    }
-    .header {
-      display: flex;
-      justify-content: flex-end;
-      padding: 15px 20px;
-      background: var(--card);
-      border-bottom: 1px solid var(--border);
-    }
-    .theme-toggle {
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      padding: 8px 14px;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    .container {
-      max-width: 600px;
-      margin: 40px auto;
-      background: var(--card);
-      padding: 25px;
-      border-radius: 12px;
-    }
-    .title {
-      text-align: center;
-      margin-bottom: 20px;
-      font-size: 28px;
-      font-weight: 600;
-    }
-    .drop-area {
-      border: 2px dashed var(--accent);
-      padding: 40px;
-      border-radius: 10px;
-      text-align: center;
-      margin-bottom: 20px;
-      cursor: pointer;
-    }
-    .btn {
-      display: block;
-      width: 100%;
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      padding: 12px;
-      border-radius: 6px;
-      font-size: 16px;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-    #status {
-      margin-top: 10px;
-      text-align: center;
-    }
-    #downloadLink {
-      display: none;
-    }
-    .progress-container {
-      width: 100%;
-      background: var(--border);
-      border-radius: 8px;
-      margin-top: 15px;
-      overflow: hidden;
-      height: 14px;
-      display: none;
-    }
-    .progress-bar {
-      height: 100%;
-      width: 0%;
-      background: var(--accent);
-      transition: width 0.2s;
-    }
+    body { font-family: Arial, sans-serif; background:#f4f4f9; margin:0; padding:20px; }
+    .container { max-width:600px; margin:auto; background:white; padding:20px; border-radius:8px; }
+    .drop-area { border:2px dashed #2575fc; padding:30px; text-align:center; margin-bottom:15px; border-radius:6px; cursor:pointer; }
+    .btn { display:block; width:100%; background:#2575fc; color:#fff; border:none; padding:12px; border-radius:6px; margin:8px 0; font-size:16px; cursor:pointer; }
+    #status { margin-top:10px; text-align:center; }
+    #downloadLink { display:none; margin-top:10px; }
+    .html-preview { margin-top:20px; padding:15px; border:1px solid #ddd; background:#fafafa; max-height:200px; overflow:auto; }
   </style>
 </head>
 <body>
-  <header class="header">
-    <button id="themeToggle" class="theme-toggle">🌙 Dark</button>
-  </header>
-
-  <main class="container">
-    <h1 class="title">PDF Converter</h1>
+  <div class="container">
+    <h2>DOCX Converter</h2>
 
     <div class="drop-area" id="dropArea">
-      <p>Drag & Drop file here<br>or click to browse</p>
-      <input type="file" id="fileInput" hidden>
+      <p>Drag & Drop .docx file here<br>or click to browse</p>
+      <input type="file" id="fileInput" hidden accept=".docx,.txt">
     </div>
 
-    <button id="uploadBtn" class="btn">Convert to PDF</button>
-
-    <div class="progress-container" id="progressContainer">
-      <div class="progress-bar" id="progressBar"></div>
-    </div>
+    <button id="toPdfBtn" class="btn">Convert to PDF</button>
+    <button id="toHtmlBtn" class="btn">Convert to HTML</button>
 
     <p id="status"></p>
-    <a id="downloadLink" class="btn">Download PDF</a>
-  </main>
+    <a id="downloadLink" class="btn">Download</a>
+
+    <div id="htmlPreview" class="html-preview" style="display:none;"></div>
+  </div>
 
   <script>
     const { jsPDF } = window.jspdf;
     const fileInput = document.getElementById("fileInput");
     const dropArea = document.getElementById("dropArea");
-    const uploadBtn = document.getElementById("uploadBtn");
     const status = document.getElementById("status");
     const downloadLink = document.getElementById("downloadLink");
-    const progressContainer = document.getElementById("progressContainer");
-    const progressBar = document.getElementById("progressBar");
+    const htmlPreview = document.getElementById("htmlPreview");
 
     let selectedFile = null;
 
@@ -147,46 +57,63 @@
       status.textContent = "Selected: " + selectedFile.name;
     });
 
-    // Convert
-    uploadBtn.addEventListener("click", () => {
+    // Convert to PDF
+    document.getElementById("toPdfBtn").addEventListener("click", () => {
       if (!selectedFile) {
         status.textContent = "Please select a file first.";
         return;
       }
-      progressContainer.style.display = "block";
-      progressBar.style.width = "0%";
-      status.textContent = "Converting...";
-
       if (selectedFile.type === "text/plain" || selectedFile.name.endsWith(".txt")) {
         convertTxt(selectedFile);
       } else if (selectedFile.name.endsWith(".docx")) {
-        convertDocx(selectedFile);
+        convertDocxToPdf(selectedFile);
       } else {
-        status.textContent = "❌ Only TXT and DOCX files are supported.";
+        status.textContent = "❌ Only TXT and DOCX supported.";
       }
     });
 
-    function updateProgress(percent) {
-      progressBar.style.width = percent + "%";
-    }
+    // Convert to HTML
+    document.getElementById("toHtmlBtn").addEventListener("click", () => {
+      if (!selectedFile || !selectedFile.name.endsWith(".docx")) {
+        status.textContent = "❌ Only DOCX files can be converted to HTML.";
+        return;
+      }
+      convertDocxToHtml(selectedFile);
+    });
 
     function convertTxt(file) {
       const reader = new FileReader();
       reader.onload = function(e) {
-        const text = e.target.result;
-        generatePdfFromText(text, file.name.replace(/\.txt$/, ".pdf"));
+        generatePdfFromText(e.target.result, file.name.replace(/\.txt$/, ".pdf"));
       };
       reader.readAsText(file);
     }
 
-    function convertDocx(file) {
+    function convertDocxToPdf(file) {
       const reader = new FileReader();
       reader.onload = function(e) {
-        const arrayBuffer = e.target.result;
-        mammoth.extractRawText({arrayBuffer}).then(result => {
+        mammoth.extractRawText({arrayBuffer: e.target.result}).then(result => {
           generatePdfFromText(result.value, file.name.replace(/\.docx$/, ".pdf"));
-        }).catch(() => {
-          status.textContent = "❌ Error reading DOCX file.";
+        });
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function convertDocxToHtml(file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        mammoth.convertToHtml({arrayBuffer: e.target.result}).then(result => {
+          const htmlContent = result.value;
+          // Show preview
+          htmlPreview.style.display = "block";
+          htmlPreview.innerHTML = htmlContent;
+          // Download as HTML file
+          const blob = new Blob([htmlContent], { type: "text/html" });
+          const url = URL.createObjectURL(blob);
+          downloadLink.href = url;
+          downloadLink.download = file.name.replace(/\.docx$/, ".html");
+          downloadLink.style.display = "block";
+          status.textContent = "✅ DOCX converted to HTML!";
         });
       };
       reader.readAsArrayBuffer(file);
@@ -194,60 +121,24 @@
 
     function generatePdfFromText(text, filename) {
       const pdf = new jsPDF({ unit: "pt", format: "a4" });
-      const pageHeight = pdf.internal.pageSize.height;
-      const margin = 40;
-      const lineHeight = 14;
-      const maxLineWidth = pdf.internal.pageSize.width - margin * 2;
-
+      const margin = 40, lineHeight = 14, maxLineWidth = pdf.internal.pageSize.width - margin * 2;
       let y = margin;
       let lines = pdf.splitTextToSize(text, maxLineWidth);
-
-      lines.forEach((line, index) => {
-        if (y + lineHeight > pageHeight - margin) {
+      lines.forEach(line => {
+        if (y + lineHeight > pdf.internal.pageSize.height - margin) {
           pdf.addPage();
           y = margin;
         }
         pdf.text(line, margin, y);
         y += lineHeight;
-        if (index % 50 === 0) updateProgress(Math.floor(index / lines.length * 100));
       });
-
       const blob = pdf.output("blob");
       const url = URL.createObjectURL(blob);
-
-      // Fallback download link
       downloadLink.href = url;
       downloadLink.download = filename;
       downloadLink.style.display = "block";
-
-      // Auto download
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-
-      status.textContent = "✅ File converted and downloaded!";
-      updateProgress(100);
+      status.textContent = "✅ File converted to PDF!";
     }
-
-    // Theme toggle
-    const themeToggle = document.getElementById("themeToggle");
-    if (localStorage.getItem("theme") === "dark") {
-      document.body.classList.add("dark");
-      themeToggle.textContent = "☀️ Light";
-    }
-    themeToggle.addEventListener("click", () => {
-      document.body.classList.toggle("dark");
-      if (document.body.classList.contains("dark")) {
-        localStorage.setItem("theme", "dark");
-        themeToggle.textContent = "☀️ Light";
-      } else {
-        localStorage.setItem("theme", "light");
-        themeToggle.textContent = "🌙 Dark";
-      }
-    });
   </script>
 </body>
 </html>
